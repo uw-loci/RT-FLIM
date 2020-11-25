@@ -75,7 +75,6 @@ hold off;
 
 
 
-
 %% Visualize Memory Metrics
 % Memory Metric Global Labels
 memory_y_label = 'Estimated Memory Usage [GB]';

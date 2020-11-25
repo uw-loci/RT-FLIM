@@ -33,23 +33,29 @@ format longe;
 % If Data Visualizer function is on (1) or off (0)
 visualizer_flag = 1;
 
+% If it only keeps representative results. 
+lite_flag = 1;
+
 % Order of the Dimensions in the Data
 data_order = 'TXYS';
 
 % How Large a Time Bin is
-time_bin_size = 4;
+% time_bin_size = [1,2,4,8,16,32];
+time_bin_size = [4];
 
 
 %% Benchmark Files
 % To add more files, add another element to the benchmark_files cell array 
 % with the full file path and file name.
 
-benchmark_files = {...
-    'D:\LOCI\FLIM\Runtime FLIM Benchmarking\Data_20200317\data_ch2_hig_photons.h5', ... % Low Artifact Benchmark Set High Flux
-    'D:\LOCI\FLIM\Runtime FLIM Benchmarking\Data_20200317\data_ch2_med_photons.h5', ... % Low Artifact Benchmark Set Medium Flux
-    'D:\LOCI\FLIM\Runtime FLIM Benchmarking\Data_20200317\data_ch2_low_photons.h5', ... % Low Artifact Benchmark Set Low Flux
-    'D:\LOCI\FLIM\Runtime FLIM Benchmarking\Data_20191007\data.h5'}; % Benchmark Set with Artifacts
+% benchmark_files = {...
+%     'D:\LOCI\FLIM\Runtime FLIM Benchmarking\Data_20200317\data_ch2_hig_photons.h5', ... % Low Artifact Benchmark Set High Flux
+%     'D:\LOCI\FLIM\Runtime FLIM Benchmarking\Data_20200317\data_ch2_med_photons.h5', ... % Low Artifact Benchmark Set Medium Flux
+%     'D:\LOCI\FLIM\Runtime FLIM Benchmarking\Data_20200317\data_ch2_low_photons.h5', ... % Low Artifact Benchmark Set Low Flux
+%     'D:\LOCI\FLIM\Runtime FLIM Benchmarking\Data_20191007\data.h5'}; % Benchmark Set with Artifacts
 
+benchmark_files = {...
+    'D:\LOCI\FLIM\Runtime FLIM Benchmarking\Data_20200317\data_ch2_hig_photons.h5'};
 
 
 %% Add Necessary Paths
@@ -58,5 +64,20 @@ addpath('Functions');
 
 
 %% Run Benchmarking
-metrics = RTFLIM_Benchmarking_Framework(benchmark_files{1}, data_order, ...
-    time_bin_size, visualizer_flag);
+collected_metrics = struct;
+for i = 1:numel(benchmark_files)
+    [~,collected_metrics(i).name_str,~] = fileparts(benchmark_files{i});
+    for j = 1:numel(time_bin_size) 
+        collected_metrics(i).name(j).time_bin_size = time_bin_size(j);
+        collected_metrics(i).name(j).metrics = ... 
+            RTFLIM_Benchmarking_Framework(benchmark_files{i}, ...
+            data_order, time_bin_size(j), 0, lite_flag);
+    end
+end
+
+
+% Visualize Results
+if visualizer_flag == 1
+    fprintf('\nVisualizing Results Across Benchmarks and Time Bins`\n');
+    RTFLIM_collected_benchmarks_visualizer(collected_metrics);
+end

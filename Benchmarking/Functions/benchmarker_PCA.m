@@ -1,5 +1,5 @@
 function [ PCA_time, PCA_memory, PCA_results ] = ...
-    benchmarker_PCA( photon_data, combined_data )
+    benchmarker_PCA( photon_data, combined_data, lite_flag )
 %% PCA Benchmarker
 %   By: Niklas Gahm
 %   2020/11/16
@@ -35,6 +35,7 @@ PCA_results = struct;
 PCA_results.iterative = struct;
 PCA_results.iterative.result(1) = 0;
 PCA_results.combined = 0;
+PCA_results.mid_iter_ind = round(numel(photon_data)/2);
 
 
 
@@ -170,9 +171,21 @@ for i = 1:numel(photon_data)
     iter_counts = reshape(iter_counts, num_pixels, num_time_bins);
     score = V' * iter_counts';    % score is actually score' here
     score = score' * normalization_factors;
-    PCA_results.iterative(i).result = ...
-        reshape(score, img_size(1), img_size(2));
-    
+    if lite_flag == 1
+        if i == 1
+            PCA_results.iterative(1).result = ...
+                reshape(score, img_size(1), img_size(2));
+        elseif i == PCA_results.mid_iter_ind
+            PCA_results.iterative(2).result = ...
+                reshape(score, img_size(1), img_size(2));
+        elseif i == numel(photon_data)
+            PCA_results.iterative(3).result = ...
+                reshape(score, img_size(1), img_size(2));
+        end
+    else
+        PCA_results.iterative(i).result = ...
+            reshape(score, img_size(1), img_size(2));
+    end
     
     % End Timing
     PCA_time.iterative.time(i) = toc(start_iter);
