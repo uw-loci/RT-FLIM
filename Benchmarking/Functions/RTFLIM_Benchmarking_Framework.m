@@ -63,19 +63,21 @@ metrics(1).results = PCA_results;
 
 
 
-% % %% Test Phasor
-% % fprintf('\nBenchmarking Phasor\n');
-% % [ Phasor_time, Phasor_memory, Phasor_results ] = ...
-% %     benchmarker_Phasor( photon_data, combined_data, lite_flag );
-% % 
-% % % Assign outuputs to a useable struct;
-% metrics(2).method = 'Phasor';
-% % metrics(2).time = Phasor_time;
-% % metrics(2).memory = Phasor_memory;
-% % metrics(2).results = Phasor_results;
-% 
-% 
-% 
+%% Test Phasor
+% Based on https://github.com/PirminLakner/Phasor_FLIM
+fprintf('\nBenchmarking Phasor\n');
+[ Phasor_time, Phasor_memory, Phasor_results ] = ...
+    benchmarker_Phasor( photon_data, combined_data, lite_flag, ...
+    time_bin_size );
+
+% Assign outuputs to a useable struct;
+metrics(2).method = 'Phasor';
+metrics(2).time = Phasor_time;
+metrics(2).memory = Phasor_memory;
+metrics(2).results = Phasor_results;
+
+
+
 % %% Test Laguerre 
 % % Based on https://ieeexplore.ieee.org/document/5594996
 % fprintf('\nBenchmarking Laguerre\n');
@@ -87,14 +89,14 @@ metrics(1).results = PCA_results;
 % metrics(3).time = Laguerre_time;
 % metrics(3).memory = Laguerre_memory;
 % metrics(3).results = Laguerre_results;
-% 
-% 
-% 
-% %% Visualize Benchmarking Results
-% if visualizer_flag == 1
-%     fprintf('\nVisualizing Results\n');
-%     RTFLIM_benchmark_visualizer( metrics );
-% end
+
+
+
+%% Visualize Benchmarking Results
+if visualizer_flag == 1
+    fprintf('\nVisualizing Results\n');
+    RTFLIM_benchmark_visualizer( metrics );
+end
 
 
 

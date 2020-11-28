@@ -110,7 +110,12 @@ for i = 1:num_benchmarks
         end
     end
 end
-bar(categorized_names, combined_time_values);
+if num_benchmarks == 1
+    bar([categorized_names; ' '], ...
+        [combined_time_values; nan(1,numel(combined_time_values))]);
+else
+    bar(categorized_names, combined_time_values);
+end
 title(time_comb_title);
 xlabel(time_comb_x_label);
 ylabel(time_y_label);
@@ -171,7 +176,12 @@ for i = 1:num_benchmarks
         end
     end
 end
-bar(categorized_names, combined_memory_values);
+if num_benchmarks == 1
+    bar([categorized_names; ' '], ...
+        [combined_memory_values; nan(1,numel(combined_memory_values))]);
+else
+    bar(categorized_names, combined_memory_values);
+end
 title(memory_comb_title);
 xlabel(memory_comb_x_label);
 ylabel(memory_y_label);
@@ -201,10 +211,15 @@ for i = 1:num_benchmarks
         sgtitle([temp_name{i}, ' with ' ...
             num2str(collected_metrics(i).name(j).time_bin_size), ...
             ' Wide Time Bins On First Iteration']);
+        sub_plots_x = ceil(num_methods/2);
+        sub_plots_y = ceil(num_methods/2);
+        if (sub_plots_x * sub_plots_y) < num_methods
+            sub_plots_x = sub_plots_x + 1;
+        end
         for k = 1:num_methods
-            subplot(ceil(num_methods/2),ceil(num_methods/2),k);
-            imshow(collected_metrics(i).name(j).metrics.results.iterative(1).result, [])
-            title(collected_metrics(i).name(j).metrics.method);
+            subplot(sub_plots_x, sub_plots_y, k);
+            imshow(collected_metrics(i).name(j).metrics(k).results.iterative(1).result, [])
+            title(collected_metrics(i).name(j).metrics(k).method);
         end
         hold off;
         
@@ -218,9 +233,9 @@ for i = 1:num_benchmarks
             num2str(collected_metrics(i).name(j).time_bin_size), ...
             ' Wide Time Bins On Final Iteration']);
         for k = 1:num_methods
-            subplot(ceil(num_methods/2),ceil(num_methods/2),k);
-            imshow(collected_metrics(i).name(j).metrics.results.iterative(end).result, [])
-            title(collected_metrics(i).name(j).metrics.method);
+            subplot(sub_plots_x, sub_plots_y, k);
+            imshow(collected_metrics(i).name(j).metrics(k).results.iterative(end).result, [])
+            title(collected_metrics(i).name(j).metrics(k).method);
         end
         hold off;
     end

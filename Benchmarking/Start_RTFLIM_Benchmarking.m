@@ -41,7 +41,7 @@ data_order = 'TXYS';
 
 % How Large a Time Bin is
 % time_bin_size = [1,2,4,8,16,32];
-time_bin_size = [4];
+time_bin_size = [16;
 
 
 %% Benchmark Files
@@ -72,12 +72,20 @@ for i = 1:numel(benchmark_files)
         collected_metrics(i).name(j).metrics = ... 
             RTFLIM_Benchmarking_Framework(benchmark_files{i}, ...
             data_order, time_bin_size(j), 0, lite_flag);
+        fprintf(['\nBenchmarked ', ...
+            strrep(collected_metrics(i).name_str, '_', ' '), ' at ', ...
+            num2str(time_bin_size(j)), ' Wide Time Bins\n']);
     end
 end
 
 
-% Visualize Results
+
+%% Visualize Results
 if visualizer_flag == 1
     fprintf('\nVisualizing Results Across Benchmarks and Time Bins`\n');
     RTFLIM_collected_benchmarks_visualizer(collected_metrics);
 end
+
+
+%% Inform User of Completion
+fprintf('\n\nAll Benchmarking is Complete.\n\n');

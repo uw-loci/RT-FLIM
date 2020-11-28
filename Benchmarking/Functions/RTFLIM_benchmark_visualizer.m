@@ -139,23 +139,23 @@ for i = 1:num_methods
     
     % First Iteration
     subplot(2,2,1);
-    imshow(metrics.results.iterative(1).result, [])
+    imshow(metrics(i).results.iterative(1).result, [])
     title(img_iter_start_title);
     
     % Middle Iteration
     subplot(2,2,2);
-    imshow(metrics.results.iterative(round(numel(...
-        metrics.results.iterative)/2)).result, []);
+    imshow(metrics(i).results.iterative(round(numel(...
+        metrics(i).results.iterative)/2)).result, []);
     title(img_iter_mid_title);
     
     % Last Iteration
     subplot(2,2,3);
-    imshow(metrics.results.iterative(end).result, [])
+    imshow(metrics(i).results.iterative(end).result, [])
     title(img_iter_last_title);
     
     % Combined
     subplot(2,2,4);
-    imshow(metrics.results.combined, []);
+    imshow(metrics(i).results.combined, []);
     title(img_comb_title);
     
     hold off;
