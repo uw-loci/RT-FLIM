@@ -85,7 +85,7 @@ metrics(2).results = Phasor_results;
 %     benchmarker_Laguerre( photon_data, combined_data, lite_flag );
 % 
 % % Assign outuputs to a useable struct;
-% metrics(3).method = 'Laguerre';
+% metrics(3).method = 'LaGuerre';
 % metrics(3).time = Laguerre_time;
 % metrics(3).memory = Laguerre_memory;
 % metrics(3).results = Laguerre_results;

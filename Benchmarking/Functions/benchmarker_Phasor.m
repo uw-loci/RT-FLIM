@@ -19,14 +19,12 @@ function [ Phasor_time, Phasor_memory, Phasor_results ] = ...
 %% Initialize Outputs
 % Initialize Time Struct
 Phasor_time = struct;
-Phasor_time.iterative = struct;
-Phasor_time.iterative.time(1) = 0;
+Phasor_time.iterative(1) = 0;
 Phasor_time.combined = 0;
 
 % Initialize Memory Struct
 Phasor_memory = struct;
-Phasor_memory.iterative = struct;
-Phasor_memory.iterative.memory(1) = 0;
+Phasor_memory.iterative(1) = 0;
 Phasor_memory.combined = 0;
 
 % Initialize Results Struct
@@ -176,7 +174,7 @@ for i = 1:numel(photon_data)
     
     % Memory estimate is centered on the largest matrix and the operations
     % done to is. This is a rough estimate, not an exact number.
-    Phasor_memory.iterative.memory(i) = 7*(temp_list(temp_ind).bytes);
+    Phasor_memory.iterative(i) = 7*(temp_list(temp_ind).bytes);
     
     
     % Start Timing
@@ -271,7 +269,7 @@ for i = 1:numel(photon_data)
     end
     
     % End Timing
-    Phasor_time.iterative.time(i) = toc(iterative_phasor_timer);
+    Phasor_time.iterative(i) = toc(iterative_phasor_timer);
 end
 
 

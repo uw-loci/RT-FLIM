@@ -20,14 +20,12 @@ function [ PCA_time, PCA_memory, PCA_results ] = ...
 %% Initialize Outputs
 % Initialize Time Struct
 PCA_time = struct;
-PCA_time.iterative = struct;
-PCA_time.iterative.time(1) = 0;
+PCA_time.iterative(1) = 0;
 PCA_time.combined = 0;
 
 % Initialize Memory Struct
 PCA_memory = struct;
-PCA_memory.iterative = struct;
-PCA_memory.iterative.memory(1) = 0;
+PCA_memory.iterative(1) = 0;
 PCA_memory.combined = 0;
 
 % Initialize Results Struct
@@ -123,7 +121,7 @@ for i = 1:numel(photon_data)
         end
     end
     
-    PCA_memory.iterative.memory(i) = 3 * (temp_list(temp_ind).bytes / ...
+    PCA_memory.iterative(i) = 3 * (temp_list(temp_ind).bytes / ...
         sum(temp_list(temp_ind).size, 'all'));
     
     % Start Timing
@@ -188,7 +186,7 @@ for i = 1:numel(photon_data)
     end
     
     % End Timing
-    PCA_time.iterative.time(i) = toc(start_iter);
+    PCA_time.iterative(i) = toc(start_iter);
 end
 
 
