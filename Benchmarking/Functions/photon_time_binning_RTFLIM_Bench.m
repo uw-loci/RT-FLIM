@@ -1,6 +1,6 @@
-function [ photon_data, time_bin_size ] = ...
+function [ photon_data, time_bin_size, exposure_time ] = ...
     photon_time_binning_RTFLIM_Bench( ...
-    photon_data, time_bin_size )
+    photon_data, time_bin_size, exposure_time)
 %% Real Time FLIM Photon Time Binner
 %   By: Niklas Gahm
 %   2020/11/16
@@ -24,6 +24,7 @@ elseif time_bin_size < 1
     warning(['Interpolating into time bins is not supported. ', ...
         'Time Bin Size used is 1.']);
     time_bin_size = 1;
+    return;
 elseif time_bin_size ~= round(time_bin_size)
     time_bin_size = round(time_bin_size);
     warning(['Non-integer time bin sizes are not supported. ', ...
@@ -45,6 +46,9 @@ if num_bins ~= round(num_bins)
         'time bin is removed.']);
     num_bins = floor(num_bins);
 end
+
+% Calculate the new effective esposure time
+exposure_time = exposure_time * time_bin_size;
 
 % Initialize a temporary placeholder that is iteratively filled
 temp = zeros(size(photon_data(1).counts,1), ...

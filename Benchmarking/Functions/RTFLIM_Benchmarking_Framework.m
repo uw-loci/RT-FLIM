@@ -1,5 +1,6 @@
 function [ metrics ] = RTFLIM_Benchmarking_Framework( ...
-    benchmark_file, data_order, time_bin_size, visualizer_flag, lite_flag)
+    benchmark_file, data_order, time_bin_size, exposure_time, ...
+    visualizer_flag, lite_flag)
 %% Runtime FLIM Benchmarking Framework
 %   By: Niklas Gahm
 %   2020/11/12
@@ -36,8 +37,9 @@ photon_data = img_loader_RTFLIM_Bench(benchmark_file_path, ...
 
 %% Perform Time-Binning
 fprintf('\nTime-Binning Data\n');
-[photon_data, time_bin_size] = ...
-    photon_time_binning_RTFLIM_Bench(photon_data, time_bin_size);
+[ photon_data, time_bin_size, exposure_time ] = ...
+    photon_time_binning_RTFLIM_Bench(photon_data, time_bin_size, ...
+    exposure_time);
 
 
 
@@ -89,6 +91,20 @@ metrics(2).results = Phasor_results;
 % metrics(3).time = Laguerre_time;
 % metrics(3).memory = Laguerre_memory;
 % metrics(3).results = Laguerre_results;
+
+
+
+%% Test RLD 
+% Based on https://pubs.acs.org/doi/pdf/10.1021/ac00176a007
+fprintf('\nBenchmarking RLD\n');
+[ RLD_time, RLD_memory, RLD_results ] = ...
+    benchmarker_RLD( photon_data, combined_data, exposure_time, lite_flag);
+
+% Assign outuputs to a useable struct;
+metrics(3).method = 'RLD';
+metrics(3).time = RLD_time;
+metrics(3).memory = RLD_memory;
+metrics(3).results = RLD_results;
 
 
 

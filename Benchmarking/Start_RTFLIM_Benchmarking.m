@@ -43,8 +43,12 @@ num_reps = 1;
 data_order = 'TXYS';
 
 % How Large a Time Bin is
-% time_bin_size = [1,2,8,16,32];
+% time_bin_size = [8,16,32,64];
+% time_bin_size = [64];
 time_bin_size = [16];
+
+% Exposure Time of Each Component Image [ns]
+exposure_time = 0.040; % 10 ps, need to confirm
 
 
 %% Benchmark Files
@@ -65,12 +69,12 @@ benchmark_files = {...
 
 %% System Variables
 
-% How many methods are being tested by the framework
-num_methods = 2;
-
 % Names of the Methods In order they are being benchmarked
-% method_names = {'NC-PCA', 'Phasor', 'LaGuerre'};
-method_names = {'NC-PCA', 'Phasor'};
+% method_names = {'NC-PCA', 'Phasor', 'LaGuerre', 'RLD'};
+method_names = {'NC-PCA', 'Phasor', 'RLD'};
+
+% How many methods are being tested by the framework
+num_methods = numel(method_names);
 
 
 %% Add Necessary Paths
@@ -99,7 +103,7 @@ for i = 1:num_reps
             
             temp_metrics = ...
                 RTFLIM_Benchmarking_Framework(benchmark_files{j}, ...
-                data_order, time_bin_size(k), 0, lite_flag);
+                data_order, time_bin_size(k), exposure_time, 0, lite_flag);
             
             % Split Out and the Components 
             results = cell(1,num_methods);
@@ -135,10 +139,11 @@ for i = 1:num_reps
                 num2str(time_bin_size(k)), ' Wide Time Bins\n']);
         end
     end
+    fprintf(['\nBenchmark Repetition ' num2str(i) ' Complete\n']);
 end
 
 % Save Resultant Metrics 
-save(['statistical_benchmarking_metrics_raw' date '.mat'], '-v7.3');
+save(['statistical_benchmarking_metrics_raw_' date '.mat'], '-v7.3');
 
 
 

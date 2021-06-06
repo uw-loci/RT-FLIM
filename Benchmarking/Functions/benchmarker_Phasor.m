@@ -104,7 +104,11 @@ end
 
 
 % remove offset from data
-data_off = mean(E(:,round(I/3):round(2*I/3)),2);
+try
+    data_off = mean(E(:,round(I/3):round(2*I/3)),2);
+catch 
+    data_off = mean(E(:,1),2);
+end
 data_off = repmat(data_off,1,size(decdata,2));
 decdata = decdata - data_off ;
 decdata(decdata<0) = 0 ;
@@ -201,7 +205,11 @@ for i = 1:numel(photon_data)
     
     
     % remove offset from data
-    data_off = mean(E(:,round(I/3):round(2*I/3)),2);
+    try
+        data_off = mean(E(:,round(I/3):round(2*I/3)),2);
+    catch
+        data_off = mean(E(:,1),2);
+    end
     data_off = repmat(data_off,1,size(decdata,2));
     decdata = decdata - data_off ;
     decdata(decdata<0) = 0 ;
