@@ -149,7 +149,6 @@ for i = 1:numel(photon_data)
         if i == 1
             RLD_results.iterative(1).result = tau;
         elseif i == round(numel(photon_data)/2)
-            RLD_results.mid_iter_ind = round(numel(photon_data)/2);
             RLD_results.iterative(2).result = tau;
         elseif i == numel(photon_data)
             RLD_results.iterative(3).result = tau;

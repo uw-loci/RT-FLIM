@@ -25,8 +25,12 @@
 %% Setup the Workspace
 clear;
 format longe; 
-
-
+try 
+    pyenv('Version', '3.8');
+catch
+    fprintf('\n\nRunning Python Version:\n');
+    pyenv
+end
 
 %% User Variables
 
@@ -37,32 +41,35 @@ visualizer_flag = 0;
 lite_flag = 1;
 
 % Number of Repetitions to be done to Mitigate Computer Variance
-num_reps = 1;
+num_reps = 15;
 
 % Order of the Dimensions in the Data
 data_order = 'TXYS';
 
-% How Large a Time Bin is
-% time_bin_size = [8,16,32,64];
-% time_bin_size = [64];
-time_bin_size = [16];
+% How Large a Time Bin is [number of individual time gates in one time bin]
+time_bin_size = [8,16,32,64];
+% time_bin_size = [16];
 
 % Exposure Time of Each Component Image [ns]
 exposure_time = 0.040; % 10 ps, need to confirm
+
+% The Degree of the Laguerre Series to be Used
+lag_degree = 9;
+
 
 
 %% Benchmark Files
 % To add more files, add another element to the benchmark_files cell array 
 % with the full file path and file name.
 
-% benchmark_files = {...
-%     'D:\LOCI\RT-FLIM\Runtime FLIM Benchmarking\Data_20200317\data_ch2_hig_photons.h5', ... % Low Artifact Benchmark Set High Flux
-%     'D:\LOCI\RT-FLIM\Runtime FLIM Benchmarking\Data_20200317\data_ch2_med_photons.h5', ... % Low Artifact Benchmark Set Medium Flux
-%     'D:\LOCI\RT-FLIM\Runtime FLIM Benchmarking\Data_20200317\data_ch2_low_photons.h5', ... % Low Artifact Benchmark Set Low Flux
-%     'D:\LOCI\RT-FLIM\Runtime FLIM Benchmarking\Data_20191007\data.h5'}; % Benchmark Set with Artifacts
-
 benchmark_files = {...
-    'D:\LOCI\RT-FLIM\Runtime FLIM Benchmarking\Data_20200317\data_ch2_hig_photons.h5'};
+    'D:\LOCI\RT-FLIM\Runtime FLIM Benchmarking\Data_20200317\data_ch2_hig_photons.h5', ... % Low Artifact Benchmark Set High Flux
+    'D:\LOCI\RT-FLIM\Runtime FLIM Benchmarking\Data_20200317\data_ch2_med_photons.h5', ... % Low Artifact Benchmark Set Medium Flux
+    'D:\LOCI\RT-FLIM\Runtime FLIM Benchmarking\Data_20200317\data_ch2_low_photons.h5', ... % Low Artifact Benchmark Set Low Flux
+    'D:\LOCI\RT-FLIM\Runtime FLIM Benchmarking\Data_20191007\data.h5'}; % Benchmark Set with Artifacts
+
+% benchmark_files = {...
+%     'D:\LOCI\RT-FLIM\Runtime FLIM Benchmarking\Data_20200317\data_ch2_hig_photons.h5'};
 
 
 
@@ -70,8 +77,7 @@ benchmark_files = {...
 %% System Variables
 
 % Names of the Methods In order they are being benchmarked
-% method_names = {'NC-PCA', 'Phasor', 'LaGuerre', 'RLD'};
-method_names = {'NC-PCA', 'Phasor', 'RLD'};
+method_names = {'NC-PCA', 'Phasor', 'LaGuerre', 'RLD'};
 
 % How many methods are being tested by the framework
 num_methods = numel(method_names);
@@ -103,7 +109,8 @@ for i = 1:num_reps
             
             temp_metrics = ...
                 RTFLIM_Benchmarking_Framework(benchmark_files{j}, ...
-                data_order, time_bin_size(k), exposure_time, 0, lite_flag);
+                data_order, time_bin_size(k), exposure_time, ...
+                lag_degree, 0, lite_flag);
             
             % Split Out and the Components 
             results = cell(1,num_methods);

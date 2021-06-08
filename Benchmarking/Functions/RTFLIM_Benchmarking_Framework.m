@@ -1,6 +1,6 @@
 function [ metrics ] = RTFLIM_Benchmarking_Framework( ...
     benchmark_file, data_order, time_bin_size, exposure_time, ...
-    visualizer_flag, lite_flag)
+    lag_degree, visualizer_flag, lite_flag)
 %% Runtime FLIM Benchmarking Framework
 %   By: Niklas Gahm
 %   2020/11/12
@@ -80,17 +80,18 @@ metrics(2).results = Phasor_results;
 
 
 
-% %% Test Laguerre 
-% % Based on https://ieeexplore.ieee.org/document/5594996
-% fprintf('\nBenchmarking Laguerre\n');
-% [ Laguerre_time, Laguerre_memory, Laguerre_results ] = ...
-%     benchmarker_Laguerre( photon_data, combined_data, lite_flag );
-% 
-% % Assign outuputs to a useable struct;
-% metrics(3).method = 'LaGuerre';
-% metrics(3).time = Laguerre_time;
-% metrics(3).memory = Laguerre_memory;
-% metrics(3).results = Laguerre_results;
+%% Test Laguerre 
+% Based on https://ieeexplore.ieee.org/document/5594996
+fprintf('\nBenchmarking Laguerre\n');
+[ Laguerre_time, Laguerre_memory, Laguerre_results ] = ...
+    benchmarker_Laguerre( ...
+    photon_data, combined_data, lag_degree, exposure_time, lite_flag );
+
+% Assign outuputs to a useable struct;
+metrics(3).method = 'LaGuerre';
+metrics(3).time = Laguerre_time;
+metrics(3).memory = Laguerre_memory;
+metrics(3).results = Laguerre_results;
 
 
 
@@ -101,10 +102,10 @@ fprintf('\nBenchmarking RLD\n');
     benchmarker_RLD( photon_data, combined_data, exposure_time, lite_flag);
 
 % Assign outuputs to a useable struct;
-metrics(3).method = 'RLD';
-metrics(3).time = RLD_time;
-metrics(3).memory = RLD_memory;
-metrics(3).results = RLD_results;
+metrics(4).method = 'RLD';
+metrics(4).time = RLD_time;
+metrics(4).memory = RLD_memory;
+metrics(4).results = RLD_results;
 
 
 
