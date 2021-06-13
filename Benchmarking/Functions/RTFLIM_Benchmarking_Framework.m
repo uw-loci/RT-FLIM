@@ -1,6 +1,6 @@
 function [ metrics ] = RTFLIM_Benchmarking_Framework( ...
     benchmark_file, data_order, time_bin_size, exposure_time, ...
-    lag_degree, visualizer_flag, lite_flag)
+    lag_degree, visualizer_flag, lite_flag, data_cleaning_flag, thresh)
 %% Runtime FLIM Benchmarking Framework
 %   By: Niklas Gahm
 %   2020/11/12
@@ -55,7 +55,8 @@ end
 % Based on https://onlinelibrary.wiley.com/doi/full/10.1002/jbio.201600160
 fprintf('\nBenchmarking PCA\n');
 [ PCA_time, PCA_memory, PCA_results ] = ...
-    benchmarker_PCA( photon_data, combined_data, lite_flag );
+    benchmarker_PCA( photon_data, combined_data, lite_flag, ...
+    data_cleaning_flag, thresh );
 
 % Assign outuputs to a useable struct;
 metrics(1).method = 'NC-PCA';
@@ -70,7 +71,7 @@ metrics(1).results = PCA_results;
 fprintf('\nBenchmarking Phasor\n');
 [ Phasor_time, Phasor_memory, Phasor_results ] = ...
     benchmarker_Phasor( photon_data, combined_data, lite_flag, ...
-    time_bin_size );
+    time_bin_size, data_cleaning_flag, thresh );
 
 % Assign outuputs to a useable struct;
 metrics(2).method = 'Phasor';
@@ -85,7 +86,8 @@ metrics(2).results = Phasor_results;
 fprintf('\nBenchmarking Laguerre\n');
 [ Laguerre_time, Laguerre_memory, Laguerre_results ] = ...
     benchmarker_Laguerre( ...
-    photon_data, combined_data, lag_degree, exposure_time, lite_flag );
+    photon_data, combined_data, lag_degree, exposure_time, lite_flag, ...
+    data_cleaning_flag, thresh );
 
 % Assign outuputs to a useable struct;
 metrics(3).method = 'LaGuerre';
@@ -99,7 +101,8 @@ metrics(3).results = Laguerre_results;
 % Based on https://pubs.acs.org/doi/pdf/10.1021/ac00176a007
 fprintf('\nBenchmarking RLD\n');
 [ RLD_time, RLD_memory, RLD_results ] = ...
-    benchmarker_RLD( photon_data, combined_data, exposure_time, lite_flag);
+    benchmarker_RLD( photon_data, combined_data, exposure_time, ...
+    lite_flag, data_cleaning_flag, thresh);
 
 % Assign outuputs to a useable struct;
 metrics(4).method = 'RLD';

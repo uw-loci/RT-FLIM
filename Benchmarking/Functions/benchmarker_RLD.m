@@ -1,5 +1,6 @@
 function [ RLD_time, RLD_memory, RLD_results ] = ...
-    benchmarker_RLD( photon_data, combined_data, exposure_time, lite_flag )
+    benchmarker_RLD( photon_data, combined_data, exposure_time, ...
+    lite_flag, data_cleaning_flag, thresh )
 %% RLD Benchmarker
 %   By: Niklas Gahm
 %   2020/11/16
@@ -62,18 +63,58 @@ RLD_memory.combined = 3 * (temp_list(temp_ind).bytes);
 % Start Timing
 start_combined = tic;
 
+% Calculate Useful Values
+img_size = size(combined_data);
+num_time_bins = img_size(3);
+num_pixels = numel(combined_data(:,:,1));
+
+% Reshape Combined Data
+combined_data = reshape(combined_data, num_pixels, num_time_bins);
+
+% Input Data Cleaning
+if data_cleaning_flag == 1
+    % Find Max and remove data before max
+    [~,I] = max(sum(combined_data(:,1)));
+    
+    decdata = combined_data( :, I:end );
+    timechannels_data = size( decdata, 2 );
+    
+    if timechannels_data < num_time_bins
+        decdata( 1, num_time_bins) = 0;
+    elseif  timechannels_data > num_time_bins
+        decdata = decdata(:, 1:num_time_bins);
+    end
+    
+    
+    % remove offset from data
+    try
+        data_off = mean(combined_data(:, round(I/3):round(2*I/3)), 2);
+    catch
+        data_off = mean(combined_data(:, 1), 2);
+    end
+    data_off = repmat(data_off, [1, size(decdata,2)]);
+    decdata = decdata - data_off ;
+    decdata(decdata<0) = 0 ;
+    
+    
+    % Threshold (not peak vs peak. Used whole intensity vs max whole intensity)
+    maxmax = max(sum(decdata, 2));
+    rows_to_remove = any(sum(decdata,2) < (thresh * maxmax), 2);
+    combined_data(rows_to_remove, :) = [];
+    
+end
 
 % Check how many time bins are in the photon data and generate the two
 % component images D_0 and D_1. Also calculates the real time exposure of
 % the component images
-if rem(size(combined_data, 3), 2) == 0
-    D_0 = sum(combined_data( :, :, 1:(size(combined_data, 3)/2)), 3);
-    D_1 = sum(combined_data( :, :, ((size(combined_data, 3)/2)+1):end), 3);
-    delta_t = exposure_time * (size(combined_data, 3)/2);
+if rem(num_time_bins, 2) == 0
+    D_0 = sum(combined_data( :, 1:(num_time_bins/2)), 2);
+    D_1 = sum(combined_data( :, ((num_time_bins/2)+1):end), 2);
+    delta_t = exposure_time * (num_time_bins/2);
 else
-    D_0 = sum(combined_data( :, :, 1:((size(combined_data, 3)-1)/2)), 3);
-    D_1 = sum(combined_data( :, :, (((size(combined_data, 3)-1)/2)+1):end), 3);
-    delta_t = exposure_time * ((size(combined_data, 3)-1)/2);
+    D_0 = sum(combined_data( :, 1:((num_time_bins-1)/2)), 2);
+    D_1 = sum(combined_data( :, (((num_time_bins-1)/2)+1):end), 2);
+    delta_t = exposure_time * ((num_time_bins-1)/2);
 end
 
 % Calculate tau (Lifetime)
@@ -83,17 +124,31 @@ tau = (-1 * delta_t) ./ log( D_1 ./ D_0 );
 % % Calculate A (pre-exponential factor)
 % A = D_0 ./ (tau .* (1 - (D_1 ./ D_0)));
 
+% Output Combined Lifetime Image
+tau_out = zeros((img_size(1)*img_size(2)),1);
+if data_cleaning_flag == 1
+    counter = 0;
+    for i = 1:numel(tau_out)
+        if~rows_to_remove(i)
+            % This case the pixel here has some life time and needs a score
+            % assigned to it
+            counter = counter + 1;
+            tau_out(i) = tau(counter);
+        end
+    end
+else
+    tau_out = tau;
+end
+RLD_results.combined = reshape(tau_out, img_size(1), img_size(2));
+
 
 % End Timing
 RLD_time.combined = toc(start_combined);
 
-% Output Combined Lifetime Image
-RLD_results.combined = tau;
-
 
 
 %% Measurement Section for Iterative Data
-cumulative_counts = photon_data(1).counts .* 0;
+build_counts = photon_data(1).counts .* 0;
 for i = 1:numel(photon_data)
     
     % Memory Usage Estimation
@@ -115,22 +170,61 @@ for i = 1:numel(photon_data)
     start_iter = tic;
     
     % Build the Cumulative Counts
-    cumulative_counts = cumulative_counts + photon_data(i).counts;
+    build_counts = build_counts + photon_data(i).counts;
+    cumulative_counts = build_counts;
+    
+    % Calculate Useful Values
+    img_size = size(cumulative_counts);
+    num_time_bins = img_size(3);
+    num_pixels = numel(cumulative_counts(:,:,1));
+    
+    % Reshape Combined Data
+    cumulative_counts = ...
+        reshape(cumulative_counts, num_pixels, num_time_bins);
+    
+    % Input Data Cleaning
+    if data_cleaning_flag == 1
+        % Find Max and remove data before max
+        [~,I] = max(sum(cumulative_counts(:,1)));
+        
+        decdata = cumulative_counts( :, I:end );
+        timechannels_data = size( decdata, 2 );
+        
+        if timechannels_data < num_time_bins
+            decdata( 1, num_time_bins) = 0;
+        elseif  timechannels_data > num_time_bins
+            decdata = decdata(:, 1:num_time_bins);
+        end
+        
+        
+        % remove offset from data
+        try
+            data_off = ...
+                mean(cumulative_counts(:, round(I/3):round(2*I/3)), 2);
+        catch
+            data_off = mean(cumulative_counts(:, 1), 2);
+        end
+        data_off = repmat(data_off, [1, size(decdata,2)]);
+        decdata = decdata - data_off ;
+        decdata(decdata<0) = 0 ;
+        
+        
+        % Threshold (not peak vs peak. Used whole intensity vs max whole intensity)
+        maxmax = max(sum(decdata, 2));
+        rows_to_remove = any(sum(decdata,2) < (thresh * maxmax), 2);
+        cumulative_counts(rows_to_remove, :) = [];
+    end
     
     % Check how many time bins are present and then build D_0 and D_1.
     % Further calculate the delta_t.
-    if rem(size(cumulative_counts, 3), 2) == 0
-        D_0 = sum(cumulative_counts( ...
-            :, :, 1:(size(cumulative_counts, 3)/2)), 3);
-        D_1 = sum(cumulative_counts( ...
-            :, :, ((size(cumulative_counts, 3)/2)+1):end), 3);
-        delta_t = exposure_time * (size(cumulative_counts, 3)/2);
+    if rem(num_time_bins, 2) == 0
+        D_0 = sum(cumulative_counts( :, 1:(num_time_bins/2)), 2);
+        D_1 = sum(cumulative_counts( :, ((num_time_bins/2)+1):end), 2);
+        delta_t = exposure_time * (num_time_bins/2);
     else
-        D_0 = sum(cumulative_counts( ...
-            :, :, 1:((size(cumulative_counts, 3)-1)/2)), 3);
-        D_1 = sum(cumulative_counts( ...
-            :, :, (((size(cumulative_counts, 3)-1)/2)+1):end), 3);
-        delta_t = exposure_time * ((size(cumulative_counts, 3)-1)/2);
+        D_0 = sum(cumulative_counts( :, 1:((num_time_bins-1)/2)), 2);
+        D_1 = sum(cumulative_counts( :, (((num_time_bins-1)/2)+1):end), 2);
+        delta_t = exposure_time * ((num_time_bins-1)/2);
     end
     
     % Calculate tau (Lifetime)
@@ -140,20 +234,37 @@ for i = 1:numel(photon_data)
     % % Calculate A (pre-exponential factor)
     % A = D_0 ./ (tau .* (1 - (D_1 ./ D_0)));
     
-    % End Timing
-    RLD_time.iterative(i) = toc(start_iter);
+    % Output Combined Lifetime Image
+    tau_out = zeros((img_size(1)*img_size(2)),1);
+    if data_cleaning_flag == 1
+        counter = 0;
+        for j = 1:numel(tau_out)
+            if~rows_to_remove(j)
+                % This case the pixel here has some life time and needs a score
+                % assigned to it
+                counter = counter + 1;
+                tau_out(i) = tau(counter);
+            end
+        end
+    else
+        tau_out = tau;
+    end
+    tau_out = reshape(tau_out, img_size(1), img_size(2));
     
-    if lite_flag == 0 
-        RLD_results.iterative(i).result = tau;
+    if lite_flag == 0
+        RLD_results.iterative(i).result = tau_out;
     else
         if i == 1
-            RLD_results.iterative(1).result = tau;
+            RLD_results.iterative(1).result = tau_out;
         elseif i == round(numel(photon_data)/2)
-            RLD_results.iterative(2).result = tau;
+            RLD_results.iterative(2).result = tau_out;
         elseif i == numel(photon_data)
-            RLD_results.iterative(3).result = tau;
+            RLD_results.iterative(3).result = tau_out;
         end
     end
+    
+    % End Timing
+    RLD_time.iterative(i) = toc(start_iter);
 end
 
 

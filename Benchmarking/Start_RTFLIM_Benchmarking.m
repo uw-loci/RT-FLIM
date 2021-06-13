@@ -12,12 +12,16 @@
 %     but WITHOUT ANY WARRANTY; without even the implied warranty of
 %     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 %     GNU General Public License for more details.
+% 
+% 
+% 
+%   This was written in Matlab R2020B, and is known to use functionality
+%   that is unavailable prior to Matlab R2018B.
 %
 %   2020/11/19 - Started 
 % 
 %   To-Do:
-%       - Expand to compare an array of time bin sizes
-%       - Expand to compare multiple benchmarking files.
+%       - Rework Visualizer
 
 
 
@@ -27,10 +31,16 @@ clear;
 format longe; 
 try 
     pyenv('Version', '3.8');
+    % Change '3.8' to whatever version of python is installed on your
+    % computer. Most erors arrising from this will be caused by a mismatch
+    % between Matlab version and supported python version. See https://www.mathworks.com/content/dam/mathworks/mathworks-dot-com/support/sysreq/files/python-compatibility.pdf
+    % for what version works with each other. 
 catch
     fprintf('\n\nRunning Python Version:\n');
     pyenv
 end
+
+
 
 %% User Variables
 
@@ -40,18 +50,22 @@ visualizer_flag = 0;
 % If it only keeps representative results. 
 lite_flag = 1;
 
+% If basic cleanining of the inpute data should be performed
+data_cleaning_flag = 1;
+thresh = 0.3;               % threshold [0,1]
+
 % Number of Repetitions to be done to Mitigate Computer Variance
-num_reps = 15;
+num_reps = 1;
 
 % Order of the Dimensions in the Data
 data_order = 'TXYS';
 
 % How Large a Time Bin is [number of individual time gates in one time bin]
-time_bin_size = [8,16,32,64];
-% time_bin_size = [16];
+% time_bin_size = [8,16,32,64];
+time_bin_size = [16];
 
 % Exposure Time of Each Component Image [ns]
-exposure_time = 0.040; % 10 ps, need to confirm
+exposure_time = 0.040; % 40 ps for LOCI Systems
 
 % The Degree of the Laguerre Series to be Used
 lag_degree = 9;
@@ -62,14 +76,14 @@ lag_degree = 9;
 % To add more files, add another element to the benchmark_files cell array 
 % with the full file path and file name.
 
-benchmark_files = {...
-    'D:\LOCI\RT-FLIM\Runtime FLIM Benchmarking\Data_20200317\data_ch2_hig_photons.h5', ... % Low Artifact Benchmark Set High Flux
-    'D:\LOCI\RT-FLIM\Runtime FLIM Benchmarking\Data_20200317\data_ch2_med_photons.h5', ... % Low Artifact Benchmark Set Medium Flux
-    'D:\LOCI\RT-FLIM\Runtime FLIM Benchmarking\Data_20200317\data_ch2_low_photons.h5', ... % Low Artifact Benchmark Set Low Flux
-    'D:\LOCI\RT-FLIM\Runtime FLIM Benchmarking\Data_20191007\data.h5'}; % Benchmark Set with Artifacts
-
 % benchmark_files = {...
-%     'D:\LOCI\RT-FLIM\Runtime FLIM Benchmarking\Data_20200317\data_ch2_hig_photons.h5'};
+%     'D:\LOCI\RT-FLIM\Runtime FLIM Benchmarking\Data_20200317\data_ch2_hig_photons.h5', ... % Low Artifact Benchmark Set High Flux
+%     'D:\LOCI\RT-FLIM\Runtime FLIM Benchmarking\Data_20200317\data_ch2_med_photons.h5', ... % Low Artifact Benchmark Set Medium Flux
+%     'D:\LOCI\RT-FLIM\Runtime FLIM Benchmarking\Data_20200317\data_ch2_low_photons.h5', ... % Low Artifact Benchmark Set Low Flux
+%     'D:\LOCI\RT-FLIM\Runtime FLIM Benchmarking\Data_20191007\data.h5'}; % Benchmark Set with Artifacts
+
+benchmark_files = {...
+    'D:\LOCI\RT-FLIM\Runtime FLIM Benchmarking\Data_20200317\data_ch2_hig_photons.h5'};
 
 
 
@@ -110,7 +124,7 @@ for i = 1:num_reps
             temp_metrics = ...
                 RTFLIM_Benchmarking_Framework(benchmark_files{j}, ...
                 data_order, time_bin_size(k), exposure_time, ...
-                lag_degree, 0, lite_flag);
+                lag_degree, 0, lite_flag, data_cleaning_flag, thresh);
             
             % Split Out and the Components 
             results = cell(1,num_methods);

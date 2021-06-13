@@ -1,6 +1,7 @@
 function [ Phasor_time, Phasor_memory, Phasor_results ] = ...
     benchmarker_Phasor( ...
-    photon_data, combined_data, lite_flag, time_bin_size )
+    photon_data, combined_data, lite_flag, time_bin_size, ...
+    data_cleaning_flag, thresh )
 %% Phasor Benchmarker
 %   By: Niklas Gahm
 %   2020/11/16
@@ -46,16 +47,12 @@ wait_box = msgbox({'The script is now going into measurement mode.'; ...
 %% Setting up the Constant Variables Throughout Measurement
 
 % -- set constants
-thresh = 0.3;               % threshold [0,1]
 harmonic = 2;               % harmonic number (1,2,3,4,...)
 
-shift_bins = 0;             % number of bins shifted to right from max for 
-                            % minimizing effect of IRF
-
-freq0 = 7.6E+7;                   % laser frequency, here 80 MHz
+freq0 = 7.6E+7;             % laser frequency, here 80 MHz
 delta_t = 48E-12;           % width of one time channel
 delta_t = delta_t * time_bin_size;
-time_bins = size(photon_data(1).counts,3);
+time_bins = size(photon_data(1).counts, 3);
 % number of time bins for one period (not 64!). 80 for harmonic no 1
 
 % ------ initial calculations ------ %
@@ -89,35 +86,40 @@ combined_phasor_timer = tic;
 % Get Combined Data and reshape it as needed
 E = reshape(combined_data, numel(combined_data(:,:,1)), time_bins);
 
-
-% Find Max and remove data before max
-maxE = sum(E,1);
-[~,I] = max(maxE);
-decdata = E(:,I+shift_bins:end);
-timechannels_data = size(decdata,2);
-
-if timechannels_data < time_bins
-    decdata(1,time_bins) = 0;
-elseif  timechannels_data > time_bins
-    decdata = decdata(:,1:time_bins);
+% Input Data Cleaning
+if data_cleaning_flag == 1
+    % Find Max and remove data before max
+    maxE = sum(E,1);
+    [~,I] = max(maxE);
+    decdata = E(:,I:end);
+    timechannels_data = size(decdata,2);
+    
+    if timechannels_data < time_bins
+        decdata(1,time_bins) = 0;
+    elseif  timechannels_data > time_bins
+        decdata = decdata(:,1:time_bins);
+    end
+    
+    
+    % remove offset from data
+    try
+        data_off = mean(E(:,round(I/3):round(2*I/3)),2);
+    catch
+        data_off = mean(E(:,1),2);
+    end
+    data_off = repmat(data_off,1,size(decdata,2));
+    decdata = decdata - data_off ;
+    decdata(decdata<0) = 0 ;
+    
+    
+    % Threshold (not peak vs peak. Used whole intensity vs max whole intensity)
+    maxmax = max(sum(decdata,2));
+    rows_to_remove = any(sum(decdata,2) < (thresh * maxmax), 2);
+    decdata(rows_to_remove,:) = [];
+    
+else
+    decdata = E;
 end
-
-
-% remove offset from data
-try
-    data_off = mean(E(:,round(I/3):round(2*I/3)),2);
-catch 
-    data_off = mean(E(:,1),2);
-end
-data_off = repmat(data_off,1,size(decdata,2));
-decdata = decdata - data_off ;
-decdata(decdata<0) = 0 ;
-
-
-% Threshold (not peak vs peak. Used whole intensity vs max whole intensity)
-maxmax = max(sum(decdata,2));
-rows_to_remove = any(sum(decdata,2) < (thresh * maxmax), 2);
-decdata(rows_to_remove,:) = [];
 
 % calculate G/S-sin/cos-matrix
 tb_vec = linspace(1,time_bins,time_bins)'; % time bin indexing vector
@@ -142,16 +144,20 @@ Z = [G_f,S_f];
 % this point. This Score value can in turn be used to present an estimated
 % view finder
 
-score = zeros(numel(rows_to_remove),1);
-counter = 0;
-for i = 1:numel(score)
-    if ~rows_to_remove(i)
-        % This case the pixel here has some life time and needs a score
-        % assigned to it
-        counter = counter + 1;
-        score(i) = Z(counter,1)*Z(counter,2);
+score = zeros(size(E,1),1);
+if data_cleaning_flag == 1
+    counter = 0;
+    for i = 1:numel(score)
+        if ~rows_to_remove(i)
+            % This case the pixel here has some life time and needs a score
+            % assigned to it
+            counter = counter + 1;
+            score(i) = Z(counter,1) * Z(counter,2);
+        end
+        % Otherwise the pixel doesn't have a lifetime.
     end
-    % Otherwise the pixel doesn't have a lifetime.
+else
+    score = Z(:,1).*Z(:,2);
 end
 score = score / max(score, [], 'all');
 Phasor_results.combined = ...
@@ -188,37 +194,45 @@ for i = 1:numel(photon_data)
     cumulative_counts = cumulative_counts + photon_data(i).counts;
     
     % Get Cumulative Counts and reshape it as needed
-    E = reshape(cumulative_counts, numel(cumulative_counts(:,:,1)), time_bins);
+    E = reshape(cumulative_counts, numel(cumulative_counts(:,:,1)), ...
+        time_bins);
     
     
-    % Find Max and remove data before max
-    maxE = sum(E,1);
-    [~,I] = max(maxE);
-    decdata = E(:,I+shift_bins:end);
-    timechannels_data = size(decdata,2);
-    
-    if timechannels_data < time_bins
-        decdata(1,time_bins) = 0;
-    elseif  timechannels_data > time_bins
-        decdata = decdata(:,1:time_bins);
+    % Input Data Cleaning
+    if data_cleaning_flag == 1
+        % Find Max and remove data before max
+        maxE = sum(E,1);
+        [~,I] = max(maxE);
+        decdata = E(:,I:end);
+        timechannels_data = size(decdata,2);
+        
+        if timechannels_data < time_bins
+            decdata(1,time_bins) = 0;
+        elseif  timechannels_data > time_bins
+            decdata = decdata(:,1:time_bins);
+        end
+        
+        
+        % remove offset from data
+        try
+            data_off = mean(E(:,round(I/3):round(2*I/3)),2);
+        catch
+            data_off = mean(E(:,1),2);
+        end
+        data_off = repmat(data_off,1,size(decdata,2));
+        decdata = decdata - data_off ;
+        decdata(decdata<0) = 0 ;
+        
+        
+        % Threshold (not peak vs peak. Used whole intensity vs max whole intensity)
+        maxmax = max(sum(decdata,2));
+        rows_to_remove = any(sum(decdata,2) < (thresh * maxmax), 2);
+        decdata(rows_to_remove,:) = [];
+        
+    else
+        decdata = E;
+        
     end
-    
-    
-    % remove offset from data
-    try
-        data_off = mean(E(:,round(I/3):round(2*I/3)),2);
-    catch
-        data_off = mean(E(:,1),2);
-    end
-    data_off = repmat(data_off,1,size(decdata,2));
-    decdata = decdata - data_off ;
-    decdata(decdata<0) = 0 ;
-    
-    
-    % Threshold (not peak vs peak. Used whole intensity vs max whole intensity)
-    maxmax = max(sum(decdata,2));
-    rows_to_remove = any(sum(decdata,2) < (thresh * maxmax), 2);
-    decdata(rows_to_remove,:) = [];
     
     % calculate G/S-sin/cos-matrix
     tb_vec = linspace(1,time_bins,time_bins)'; % time bin indexing vector
@@ -239,20 +253,24 @@ for i = 1:numel(photon_data)
     Z = [G_f,S_f];
     
     
-    % Abbriviated Phasor Since a Score Value can technically get generated 
-    % at this point. This Score value can in turn be used to present an 
+    % Abbriviated Phasor Since a Score Value can technically get generated
+    % at this point. This Score value can in turn be used to present an
     % estimated view finder
     
-    score = zeros(numel(rows_to_remove),1);
-    counter = 0;
-    for j = 1:numel(score)
-        if ~rows_to_remove(j)
-            % This case the pixel here has some life time and needs a score
-            % assigned to it
-            counter = counter + 1;
-            score(j) = Z(counter,1)*Z(counter,2);
+    score = zeros(size(E,1),1);
+    if data_cleaning_flag == 1
+        counter = 0;
+        for j = 1:numel(score)
+            if ~rows_to_remove(j)
+                % This case the pixel here has some life time and needs a 
+                % score assigned to it
+                counter = counter + 1;
+                score(j) = Z(counter,1)*Z(counter,2);
+            end
+            % Otherwise the pixel doesn't have a lifetime.
         end
-        % Otherwise the pixel doesn't have a lifetime.
+    else
+        score = Z(:,1).*Z(:,2);
     end
     score = score / max(score, [], 'all');
     

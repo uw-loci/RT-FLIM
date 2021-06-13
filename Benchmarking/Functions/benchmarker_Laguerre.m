@@ -1,6 +1,6 @@
 function [ Laguerre_time, Laguerre_memory, Laguerre_results ] = ...
     benchmarker_Laguerre( photon_data, combined_data, lag_degree, ...
-    exposure_time, lite_flag )
+    exposure_time, lite_flag, data_cleaning_flag, thresh )
 %% Laguerre Benchmarker
 %   By: Niklas Gahm
 %   2020/11/16
@@ -65,29 +65,77 @@ Laguerre_memory.combined = 4*(temp_list(temp_ind).bytes);
 % Start Timing
 start_combined = tic;
 
+%%% Calculate Useful Values
+img_size = size(combined_data);
+num_time_bins = img_size(3);
+num_pixels = numel(combined_data(:,:,1));
+
 % Reshape Image to a 2D Pixels in Columns and time bins in Rows
-pixel_data = zeros(size(combined_data, 3), numel(combined_data(:,:,1)));
-for i = 1:size(combined_data,3)
-    pixel_data(i,:) = ...
-        reshape(combined_data(:,:,i), 1, numel(combined_data(:,:,1)));
+pixel_data = reshape(combined_data, num_pixels, num_time_bins);
+
+% Input Data Cleaning
+if data_cleaning_flag == 1
+    % Find Max and remove data before max
+    [~,I] = max(sum(pixel_data(:,1)));
+    
+    decdata = pixel_data( :, I:end );
+    timechannels_data = size( decdata, 2 );
+    
+    if timechannels_data < num_time_bins
+        decdata( 1, num_time_bins) = 0;
+    elseif  timechannels_data > num_time_bins
+        decdata = decdata(:, 1:num_time_bins);
+    end
+    
+    % remove offset from data
+    try
+        data_off = mean(pixel_data(:, round(I/3):round(2*I/3)), 2);
+    catch
+        data_off = mean(pixel_data(:, 1), 2);
+    end
+    data_off = repmat(data_off, [1, size(decdata,2)]);
+    decdata = decdata - data_off ;
+    decdata(decdata<0) = 0 ;
+    
+    
+    % Threshold (not peak vs peak. Used whole intensity vs max whole intensity)
+    maxmax = max(sum(decdata, 2));
+    rows_to_remove = any(sum(decdata,2) < (thresh * maxmax), 2);
+    pixel_data(rows_to_remove, :) = [];
+    
 end
 
 % Generate Corresponding Time Matrix
-bin_times = 1:1:size(combined_data,3);
+bin_times = 1:1:num_time_bins;
 bin_times = bin_times * exposure_time;
 
 % Fit the Coefficients of the Laguerre Series
 coef = py.numpy.polynomial.laguerre.lagfit( ...
-    int32(bin_times), int32(pixel_data), int32(lag_degree) );
+    int32(bin_times), int32(pixel_data'), int32(lag_degree) );
 coef = double(coef);
+coef = coef';
 
 % The coeficients themselves show the presence and differences of lifetime
-% based on this, the resultant score image is the map of the first
+% based on this, the resultant score image is the map of the third
 % coefficient
 
+coef_out = zeros((img_size(1)*img_size(2)),1);
+if data_cleaning_flag == 1
+    counter = 0;
+    for i = 1:numel(coef_out)
+        if~rows_to_remove(i)
+            % This case the pixel here has some life time and needs a score
+            % assigned to it
+            counter = counter + 1;
+            coef_out(i) = coef(counter,3);
+        end
+    end
+else
+    coef_out = coef(:,3);
+end
+
 % Generate Image
-Laguerre_results.combined = reshape(coef(1,:), size(combined_data, 1), ...
-    size(combined_data, 2));
+Laguerre_results.combined = reshape(coef_out, img_size(1), img_size(2));
 
 % End Timing
 Laguerre_time.combined = toc(start_combined);
@@ -117,37 +165,76 @@ for i = 1:numel(photon_data)
     % Build the Cumulative Counts
     cumulative_counts = cumulative_counts + photon_data(i).counts;
     
-    % Collect Image Dimensions for Reshaping
-    img_dim_1 = size(cumulative_counts, 1);
-    img_dim_2 = size(cumulative_counts, 2);
-    img_dim_3 = size(cumulative_counts, 3);
+    %%% Calculate Useful Values
+    img_size = size(cumulative_counts);
+    num_time_bins = img_size(3);
+    num_pixels = numel(cumulative_counts(:,:,1));
     
-    % Reshape Image to a 2D Pixels in Columns and time bins in Rows
-    pixel_data = zeros(img_dim_3, (img_dim_1 * img_dim_2));
-    for j = 1:img_dim_3
-        pixel_data(j,:) = ...
-            reshape(cumulative_counts(:,:,j), 1, (img_dim_1 * img_dim_2));
+    % Reshape Image
+    pixel_data = reshape(cumulative_counts, num_pixels, num_time_bins);
+    
+    % Input Data Cleaning
+    if data_cleaning_flag == 1
+        % Find Max and remove data before max
+        [~,I] = max(sum(pixel_data(:,1)));
+        
+        decdata = pixel_data( :, I:end );
+        timechannels_data = size( decdata, 2 );
+        
+        if timechannels_data < num_time_bins
+            decdata( 1, num_time_bins) = 0;
+        elseif  timechannels_data > num_time_bins
+            decdata = decdata(:, 1:num_time_bins);
+        end
+        
+        % remove offset from data
+        try
+            data_off = mean(pixel_data(:, round(I/3):round(2*I/3)), 2);
+        catch
+            data_off = mean(pixel_data(:, 1), 2);
+        end
+        data_off = repmat(data_off, [1, size(decdata,2)]);
+        decdata = decdata - data_off ;
+        decdata(decdata<0) = 0 ;
+        
+        % Threshold (not peak vs peak. Used whole intensity vs max whole intensity)
+        maxmax = max(sum(decdata, 2));
+        rows_to_remove = any(sum(decdata,2) < (thresh * maxmax), 2);
+        pixel_data(rows_to_remove, :) = [];
     end
     
     % Generate Corresponding Time Matrix
-    bin_times = 1:1:img_dim_3;
+    bin_times = 1:1:num_time_bins;
     bin_times = bin_times * exposure_time;
     
     % Fit the Coefficients of the Laguerre Series
     coef = py.numpy.polynomial.laguerre.lagfit( ...
-        int32(bin_times), int32(pixel_data), int32(lag_degree) );
+        int32(bin_times), int32(pixel_data'), int32(lag_degree) );
     coef = double(coef);
+    coef = coef';
     
     % The coeficients themselves show the presence and differences of
     % lifetime based on this, the resultant score image is the map of the
-    % first coefficient
+    % third coefficient
+    
+    coef_out = zeros((img_size(1)*img_size(2)),1);
+    if data_cleaning_flag == 1
+        counter = 0;
+        for j = 1:numel(coef_out)
+            if~rows_to_remove(j)
+                % This case the pixel here has some life time and needs a 
+                % score assigned to it
+                counter = counter + 1;
+                coef_out(j) = coef(counter,3);
+            end
+        end
+    else
+        coef_out = coef(:,3);
+    end
     
     % Generate Image
-    res_img = reshape(coef(1,:), img_dim_1, img_dim_2);
+    res_img = reshape(coef_out, img_size(1), img_size(2));
     
-    
-    % End Timing
-    Laguerre_time.iterative(i) = toc(start_iter);
     
     if lite_flag == 0
         Laguerre_results.iterative(i).result = res_img;
@@ -160,6 +247,9 @@ for i = 1:numel(photon_data)
             Laguerre_results.iterative(3).result = res_img;
         end
     end
+    
+    % End Timing
+    Laguerre_time.iterative(i) = toc(start_iter);
 end
 
 
