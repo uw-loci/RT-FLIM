@@ -55,14 +55,14 @@ data_cleaning_flag = 1;
 thresh = 0.3;               % threshold [0,1]
 
 % Number of Repetitions to be done to Mitigate Computer Variance
-num_reps = 1;
+num_reps = 15;
 
 % Order of the Dimensions in the Data
 data_order = 'TXYS';
 
 % How Large a Time Bin is [number of individual time gates in one time bin]
-% time_bin_size = [8,16,32,64];
-time_bin_size = [16];
+time_bin_size = [8,16,32,64];
+% time_bin_size = [16];
 
 % Exposure Time of Each Component Image [ns]
 exposure_time = 0.040; % 40 ps for LOCI Systems
@@ -83,8 +83,27 @@ lag_degree = 9;
 %     'D:\LOCI\RT-FLIM\Runtime FLIM Benchmarking\Data_20191007\data.h5'}; % Benchmark Set with Artifacts
 
 benchmark_files = {...
-    'D:\LOCI\RT-FLIM\Runtime FLIM Benchmarking\Data_20200317\data_ch2_hig_photons.h5'};
+    'D:\LOCI\RT-FLIM\Runtime FLIM Benchmarking\Data_20200317\data_ch2_hig_photons.h5', ... % Low Artifact Benchmark Set High Flux
+    'D:\LOCI\RT-FLIM\Runtime FLIM Benchmarking\Data_20200317\data_ch2_med_photons.h5', ... % Low Artifact Benchmark Set Medium Flux
+    'D:\LOCI\RT-FLIM\Runtime FLIM Benchmarking\Data_20200317\data_ch2_low_photons.h5'}; % Low Artifact Benchmark Set Low Flux
 
+% benchmark_files = {...
+%     'D:\LOCI\RT-FLIM\Runtime FLIM Benchmarking\Data_20200317\data_ch2_hig_photons.h5'};
+
+
+% benchmark_files_processed_FLIM = { ...
+%     'D:\LOCI\RT-FLIM\Runtime FLIM Benchmarking\Data_20200317\Processed\data_ch2_hig_photons.tif', ... % Low Artifact Benchmark Set High Flux
+%     'D:\LOCI\RT-FLIM\Runtime FLIM Benchmarking\Data_20200317\Processed\data_ch2_med_photons.tif', ... % Low Artifact Benchmark Set Medium Flux
+%     'D:\LOCI\RT-FLIM\Runtime FLIM Benchmarking\Data_20200317\Processed\data_ch2_low_photons.tif', ... % Low Artifact Benchmark Set Low Flux
+%     ''};  % Benchmark Set with Artifacts
+
+benchmark_files_processed_FLIM = { ...
+    'D:\LOCI\RT-FLIM\Runtime FLIM Benchmarking\Data_20200317\Processed\data_ch2_hig_photons.tif', ... % Low Artifact Benchmark Set High Flux
+    'D:\LOCI\RT-FLIM\Runtime FLIM Benchmarking\Data_20200317\Processed\data_ch2_med_photons.tif', ... % Low Artifact Benchmark Set Medium Flux
+    'D:\LOCI\RT-FLIM\Runtime FLIM Benchmarking\Data_20200317\Processed\data_ch2_low_photons.tif'}; % Low Artifact Benchmark Set Low Flux
+
+% benchmark_files_processed_FLIM = { ...
+%     'D:\LOCI\RT-FLIM\Runtime FLIM Benchmarking\Data_20200317\Processed\data_ch2_hig_photons.tif'};
 
 
 
@@ -149,8 +168,6 @@ for i = 1:num_reps
             
             save(save_file_name, 'results');
             
-            
-            
             % Clean Up Memory
             clear temp_metrics results
             
@@ -162,6 +179,12 @@ for i = 1:num_reps
     end
     fprintf(['\nBenchmark Repetition ' num2str(i) ' Complete\n']);
 end
+
+% Estimate Image Accuracy
+fprintf('\nImage Accuracy Estimation\n');
+accuracy_percentage_matrix = RTFLIM_Accuracy_Estimation( ...
+    num_reps, time_bin_size, num_methods, benchmark_files, ...
+    benchmark_files_processed_FLIM, spath, data_order);
 
 % Save Resultant Metrics 
 save(['statistical_benchmarking_metrics_raw_' date '.mat'], '-v7.3');
