@@ -22,7 +22,11 @@ cd(benchmark_file_path);
 photon_data = struct;
 
 % Use Matlab's native HDF5 reader to import data.
-file_info = h5info(benchmark_file_name);
+disp(benchmark_file_name);
+%exist(benchmark_file_name,"file");
+h5file = strcat(benchmark_file_path,'\',benchmark_file_name{1},benchmark_file_name{2});
+%file_info = h5info(benchmark_file_path);
+file_info = h5info(h5file);
 num_datasets = numel(file_info.Datasets);
 
 
@@ -32,7 +36,7 @@ for i = 1:num_datasets
     waitbar((i/num_datasets), loader_bar);
     
     % Read counts data and convert to double
-    photon_data(i).counts = double(h5read(benchmark_file_name, ...
+    photon_data(i).counts = double(h5read(h5file, ...
         ['/', file_info.Datasets(i).Name]));
     
     % Rearrange dimensions to fit the benchmarking code

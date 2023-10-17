@@ -82,10 +82,13 @@ lag_degree = 9;
 %     'D:\LOCI\RT-FLIM\Runtime FLIM Benchmarking\Data_20200317\data_ch2_low_photons.h5', ... % Low Artifact Benchmark Set Low Flux
 %     'D:\LOCI\RT-FLIM\Runtime FLIM Benchmarking\Data_20191007\data.h5'}; % Benchmark Set with Artifacts
 
-benchmark_files = {...
-    'D:\LOCI\RT-FLIM\Runtime FLIM Benchmarking\Data_20200317\data_ch2_hig_photons.h5', ... % Low Artifact Benchmark Set High Flux
-    'D:\LOCI\RT-FLIM\Runtime FLIM Benchmarking\Data_20200317\data_ch2_med_photons.h5', ... % Low Artifact Benchmark Set Medium Flux
-    'D:\LOCI\RT-FLIM\Runtime FLIM Benchmarking\Data_20200317\data_ch2_low_photons.h5'}; % Low Artifact Benchmark Set Low Flux
+%foldername = 'D:\LOCI\RT-FLIM\Runtime FLIM Benchmarking\Data_20200317'
+%foldername = "D:\_UserData\JenuChacko\OneDrive\OneDrive - UW-Madison\Projects\Sparse_Fluroescence_Spectra\Data_20200317_";
+foldername = "C:\Users\varghesechac\Documents\MATLAB";
+benchmark_files = {...    
+    foldername+'\data_ch2_hig_photons.h5', ... % Low Artifact Benchmark Set High Flux
+    foldername+'\data_ch2_med_photons.h5', ... % Low Artifact Benchmark Set Medium Flux
+    foldername+'\data_ch2_low_photons.h5'}; % Low Artifact Benchmark Set Low Flux
 
 % benchmark_files = {...
 %     'D:\LOCI\RT-FLIM\Runtime FLIM Benchmarking\Data_20200317\data_ch2_hig_photons.h5'};
@@ -98,9 +101,9 @@ benchmark_files = {...
 %     ''};  % Benchmark Set with Artifacts
 
 benchmark_files_processed_FLIM = { ...
-    'D:\LOCI\RT-FLIM\Runtime FLIM Benchmarking\Data_20200317\Processed\data_ch2_hig_photons.tif', ... % Low Artifact Benchmark Set High Flux
-    'D:\LOCI\RT-FLIM\Runtime FLIM Benchmarking\Data_20200317\Processed\data_ch2_med_photons.tif', ... % Low Artifact Benchmark Set Medium Flux
-    'D:\LOCI\RT-FLIM\Runtime FLIM Benchmarking\Data_20200317\Processed\data_ch2_low_photons.tif'}; % Low Artifact Benchmark Set Low Flux
+    foldername+"\Processed\data_ch2_hig_photons.tif", ... % Low Artifact Benchmark Set High Flux
+    foldername+"\Processed\data_ch2_med_photons.tif", ... % Low Artifact Benchmark Set Medium Flux
+    foldername+"\Processed\data_ch2_low_photons.tif"}; % Low Artifact Benchmark Set Low Flux
 
 % benchmark_files_processed_FLIM = { ...
 %     'D:\LOCI\RT-FLIM\Runtime FLIM Benchmarking\Data_20200317\Processed\data_ch2_hig_photons.tif'};
@@ -119,6 +122,7 @@ num_methods = numel(method_names);
 %% Add Necessary Paths
 addpath('Functions');
 hpath = pwd;
+disp(pwd);
 spath = [hpath '\Benchmark_Results_' date];
 mkdir(spath);
 
@@ -162,9 +166,11 @@ for i = 1:num_reps
             end
             
             % Save the Results Images Struct
-            save_file_name = [spath '\' name_str ...
-                '_bin_size_' num2str(time_bin_size(k)) '_rep_' ...
-                num2str(i) '.mat'];
+            save_file_name = strcat(spath,'\',name_str,'_bin_size_', ...
+                num2str(time_bin_size(k)),'_rep_',num2str(i),'.mat');
+            %[spath '\' name_str ...
+            %    '_bin_size_' num2str(time_bin_size(k)) '_rep_' ...
+            %    num2str(i) '.mat'];
             
             save(save_file_name, 'results');
             
@@ -172,9 +178,9 @@ for i = 1:num_reps
             clear temp_metrics results
             
             % Inform User This Round is Complete
-            fprintf(['\nBenchmarked ', ...
+            fprintf(strcat('\nBenchmarked ', ...
                 strrep(name_str, '_', ' '), ' at ', ...
-                num2str(time_bin_size(k)), ' Wide Time Bins\n']);
+                num2str(time_bin_size(k)), ' Wide Time Bins\n'));
         end
     end
     fprintf(['\nBenchmark Repetition ' num2str(i) ' Complete\n']);
@@ -187,7 +193,7 @@ accuracy_percentage_matrix = RTFLIM_Accuracy_Estimation( ...
     benchmark_files_processed_FLIM, spath, data_order);
 
 % Save Resultant Metrics 
-save(['statistical_benchmarking_metrics_raw_' date '.mat'], '-v7.3');
+save(strcat('statistical_benchmarking_metrics_raw_',date,'.mat'), '-v7.3');
 
 
 
